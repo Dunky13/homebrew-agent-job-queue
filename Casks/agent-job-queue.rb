@@ -1,8 +1,8 @@
 cask "agent-job-queue" do
-  version "0.1.0,13"
-  sha256 "72f1fc25e035c0b4e67f15357f6427c947ecda8bc23a1af5a3c838591592ea13"
+  version "0.1.0,15"
+  sha256 "02fe88f7e63a6a5a2fe5924d97ae9c0e541c8e097041b6d9d6f0ace1d4a40125"
 
-  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-13-68a78e6/Agent-Job-Queue-Installer-0.1.0-universal.zip"
+  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-15-6837ec3/Agent-Job-Queue-Installer-0.1.0-universal.zip"
   name "Agent Job Queue"
   desc "Shared heavy-command queue with a macOS menu-bar app"
   homepage "https://github.com/Dunky13/agent-job-queue"
@@ -12,6 +12,22 @@ cask "agent-job-queue" do
   depends_on formula: "python@3.12"
   depends_on formula: "uv"
   depends_on macos: :sequoia
+
+  # Ad hoc signed and not notarized: clear quarantine only on this staged build
+  # before executing its installer or copying its app and command wrappers.
+  if respond_to?(:preflight_steps)
+    preflight_steps do
+      run "/usr/bin/xattr",
+          args: ["-dr", "com.apple.quarantine", "{{staged_path}}"],
+          must_succeed: true
+    end
+  else
+    preflight do
+      system_command "/usr/bin/xattr",
+                     args: ["-dr", "com.apple.quarantine", staged_path],
+                     must_succeed: true
+    end
+  end
 
   # The vendor installer also prepares private per-user CLI support and services.
   payload = "#{staged_path}/Agent Job Queue Installer.app/Contents/Resources/payload"
@@ -34,6 +50,7 @@ cask "agent-job-queue" do
   caveats <<~EOS
     Installs and opens Agent Queue for this macOS account without a manual setup step.
     Phone access is off until enabled in the app. This build is ad hoc signed, not notarized.
+    Installation clears quarantine only on this cask's staged files so they can run.
     Uninstall removes the menu app and Homebrew command links. The shared per-user backend,
     operator commands, queue jobs, credentials and enabled remote access remain available.
     Disable phone access in settings before uninstall if you want its HTTPS service stopped.

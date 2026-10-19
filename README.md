@@ -2,7 +2,7 @@
 
 Homebrew distribution for [Agent Job Queue](https://github.com/Dunky13/agent-job-queue), a macOS menu-bar app and shared queue for heavy coding-agent commands.
 
-The first installer release is pending. Until a validated app release publishes its manifest and the refresh workflow succeeds, this tap has no installable cask.
+A cask becomes available after a validated app release publishes its manifest and the refresh workflow succeeds. On a new tap, installation remains unavailable until that first refresh.
 
 After that first refresh:
 

@@ -35,7 +35,9 @@ An owner can trigger refresh after a validated app release:
 gh workflow run refresh.yml --repo Dunky13/homebrew-agent-job-queue --ref tap
 ```
 
-Maintainer tooling is reviewed and tested in the app repository under `packaging/homebrew/`. Copy reviewed refresh.py, render_cask.py, test-cask.rb, test_refresh.py, the refresh workflow, and the root release_metadata.py here through signed, DCO-signed-off commits. The source delivery job requires exact helper parity, so merge a companion tap tooling PR before the corresponding source change. Published metadata is under `Casks/`; leave it to the refresh workflow. The MIT license covers this tap's tooling; the installer includes its own notices.
+Maintainer tooling is reviewed and tested in the app repository under `packaging/homebrew/`. Copy reviewed refresh.go, refresh_test.go, test-cask.rb, the refresh workflow, and the root LICENSE here through signed, DCO-signed-off commits. The Go helper and its copied tests use only the standard library, without Python or app-module downloads. Validate them with `go test -p 2 refresh.go refresh_test.go` using Go 1.26 or later. Source-only renderer parity tests remain in the app repository.
+
+The source delivery job requires exact helper parity, so merge a companion tap tooling PR before the corresponding source change. Published metadata is under `Casks/`; leave it to the refresh workflow. The current cask retains its original release identity and installation requirements until a newer validated app release is published. The MIT license covers this tap's tooling; the installer includes its own notices.
 
 The quarantine preflight uses `preflight_steps` when supported, with a legacy `preflight` fallback. The real Homebrew DSL helper checks that exactly one preflight precedes the installer and both binary artifacts. A failed attribute removal aborts installation. The app repository's macOS tests cover a quarantined private fixture, retained unrelated attributes, both compatibility paths, and failure before installer execution.
 

@@ -1,6 +1,6 @@
 # Notarized installer transition
 
-Prepared on 2026-10-21 with the source repository's Developer ID and Apple
+Updated on 2026-10-22 with the source repository's Developer ID and Apple
 notarization change. This companion update changes trusted rendering and tests;
 it does not rewrite generated Casks records or publish an installer.
 
@@ -28,9 +28,23 @@ process groups receive bounded teardown; uncertain cleanup retains private
 fixture tools rather than exposing a surviving installer to system launchctl.
 
 Standalone refresh tests and Ruby syntax are the applicable checks in this tap.
-Actual notarized installation remains pending Apple's acceptance and the
-source acceptance jobs. No claim of offline standalone executable first launch
-is made.
+Apple accepted the source test payload, enclosing installer and DMG with no
+reported issues. The source's complete local final-artifact validation passed,
+including the real quarantined cask installation against private state. All
+204 staged entries retained quarantine and the additional test attribute; the
+private daemon remained healthy. Unsigned and incomplete installer rejection
+and timeout/normal-exit/cancellation descendant cleanup also passed.
+
+That run caught a fixture fidelity issue: copying only the payload into an
+incomplete outer app blocked execution before Go started. Staging the complete
+signed and stapled installer fixed the test with its original deadline and
+quarantine checks intact. Both hosted architectures now select that regression
+in the source's final notarized acceptance job.
+
+These are local test artifacts without embedded commit/build identity. A
+production release still needs its own tracked build, Apple acceptance and
+fresh source acceptance jobs. No claim of offline standalone executable first
+launch is made.
 
 ## Delivery
 

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "repository": "Dunky13/agent-job-queue",
   "version": "0.1.0",
-  "commit": "c7ed359a425064514469195b3989b44fb8ebce5b",
-  "build": 56,
-  "tag": "build-56-c7ed359",
+  "commit": "f892944dca4159ff125d2ad841661e1dfd36af96",
+  "build": 58,
+  "tag": "build-58-f892944",
   "asset": "Agent-Job-Queue-Installer-0.1.0-universal.zip",
-  "sha256": "883ccad774341011c410b42a89381a7ac25de08e518d4cc68e7ba6f2dcf58728"
+  "sha256": "66d62ce3172f06601f2edaca56196b96f573e73001613aebd761a99e20e20c9a"
 }

@@ -41,6 +41,10 @@ signed and stapled installer fixed the test with its original deadline and
 quarantine checks intact. Both hosted architectures now select that regression
 in the source's final notarized acceptance job.
 
+The tap's runtime fixture includes the same complete-enclosure repair. All
+four trusted tooling files match the source seed byte for byte; source delivery
+verifies this parity at the tap commit before updating generated casks.
+
 These are local test artifacts without embedded commit/build identity. A
 production release still needs its own tracked build, Apple acceptance and
 fresh source acceptance jobs. No claim of offline standalone executable first

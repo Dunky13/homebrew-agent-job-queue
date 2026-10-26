@@ -1,5 +1,7 @@
 # Homebrew managed-app upgrade repair
 
+Source repair: [PR #25](https://github.com/Dunky13/agent-job-queue/pull/25). Companion tap tooling: [PR #5](https://github.com/Dunky13/homebrew-agent-job-queue/pull/5), which must merge first.
+
 ## Problem and scope
 
 The script-installer cask executes setup directly from the shared Caskroom. Payload validation introduced with drag-to-Applications installation rejects group-writable ancestors, including Homebrew's Caskroom and some installation prefixes. The old cask also deletes the installed app before attempting replacement, while its rollback metadata does not describe an app artifact.
@@ -49,4 +51,4 @@ Local validation passed:
 
 Independent source review has no unresolved findings. It caught a fixture-environment omission when setup moved outside Ruby; the corrected request explicitly supplies private test mode and launchctl tools, and the actual signed-artifact test passes with that isolation. The operator's installed app and queue were not updated by this repair.
 
-Hosted CI, merge, new artifact publication, and public tap delivery remain separate gates. The first-launch request was exercised directly with the signed helper; no production app was opened in the operator's graphical session. The operating contract is in [Homebrew delivery](../homebrew-delivery.md).
+Hosted CI, merge, new artifact publication, and public tap delivery remain separate gates. The first-launch request was exercised directly with the signed helper; no production app was opened in the operator's graphical session. The operating contract is in [Homebrew delivery](https://github.com/Dunky13/agent-job-queue/blob/dunky13/installer-payload-permissions/docs/homebrew-delivery.md).

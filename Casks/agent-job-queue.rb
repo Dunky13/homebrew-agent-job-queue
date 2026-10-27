@@ -1,8 +1,8 @@
 cask "agent-job-queue" do
-  version "0.1.0,118"
-  sha256 "4528d7532b5c0089d49e976b7e0c0edd3b558a0b26efe937ef5aa2bf4ffe847a"
+  version "0.1.0,126"
+  sha256 "01ba506e08a59fc8b7b66110d0b31b2585f3b3592d699c72a7cfc2b754d927ee"
 
-  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-118-5ab7db8/Agent-Job-Queue-Installer-0.1.0-universal.zip"
+  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-126-e7e75b3/Agent-Job-Queue-Installer-0.1.0-universal.zip"
   name "Agent Job Queue"
   desc "Shared heavy-command queue with a macOS menu-bar app"
   homepage "https://github.com/Dunky13/agent-job-queue"

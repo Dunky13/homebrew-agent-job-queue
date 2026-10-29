@@ -1,9 +1,9 @@
 cask "agent-job-queue" do
-  version "0.1.0,150"
-  sha256 "9f6d0b2caa9bfe8e4a0bf7e4b931822397cb8cccfcde9d2e18e20fbc060d878c"
+  version "0.1.0,162"
+  sha256 "5755a0d266137029a39882f82a058e72ae762017505dee12a2e6c58bc008306a"
 
-  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-150-e26e735/Agent-Job-Queue-Installer-0.1.0-universal.zip"
-  name "Agent Job Queue"
+  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-162-d53dc7b/Agent-Queue-0.1.0-universal.zip"
+  name "Agent Queue"
   desc "Shared heavy-command queue with a macOS menu-bar app"
   homepage "https://github.com/Dunky13/agent-job-queue"
 
@@ -11,27 +11,15 @@ cask "agent-job-queue" do
 
   # Preserve quarantine so macOS can assess the notarized release.
 
-  application = "#{Dir.home}/Applications/Agent Queue.app"
-  app "Agent Job Queue Installer.app/Contents/Resources/payload/Agent Queue.app", target: application
+  app "Agent Queue.app"
 
-  # Stable per-user wrappers survive staged cask cleanup and future upgrades.
-  binary "Agent Job Queue Installer.app/Contents/Resources/payload/source/links/agent-heavy"
-  binary "Agent Job Queue Installer.app/Contents/Resources/payload/source/links/agent-remote"
-
-  # The app artifact owns app removal and upgrade rollback.
-  uninstall quit: "io.went.agent-queue",
-            script: {
-              executable: "/bin/rm",
-              args: ["-f", "--", "#{Dir.home}/Library/LaunchAgents/io.went.agent-queue.plist"],
-              sudo: false,
-            }
+  uninstall quit: "io.went.agent-queue"
 
   caveats <<~EOS
-    Installs Agent Queue for this account without Python, uv, or a Go toolchain.
-    Open Agent Queue to finish setup. Command-line tools are ready after setup completes.
-    Release installer and app are Developer ID signed and notarized.
-    Quarantine is retained. Phone access is off until enabled.
-    Uninstall preserves the independent queue, jobs, credentials and remote access.
-    Disable phone access in settings before uninstall to stop its HTTPS service.
+    Open Agent Queue from Applications to finish setup; it registers its own
+    background services and adds agent-heavy and agent-remote to ~/.local/bin.
+    macOS may ask you to allow Agent Queue in Login Items settings.
+    Before removing the app, stop its services with:
+      ~/.local/bin/agent-heavy install --app-bundle "#{appdir}/Agent Queue.app" --unregister-services
   EOS
 end

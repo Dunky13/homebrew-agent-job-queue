@@ -127,7 +127,16 @@ func asInteger(value any) (int64, bool) {
 	return n, err == nil
 }
 
-func validateManifest(body []byte) (manifest, error) {
+// assetName names the release archive. Only already-published tap state may
+// still use the installer wrapper that preceded the drag-and-drop app.
+func assetName(version string, legacy bool) string {
+	if legacy {
+		return fmt.Sprintf("Agent-Job-Queue-Installer-%s-universal.zip", version)
+	}
+	return fmt.Sprintf("Agent-Queue-%s-universal.zip", version)
+}
+func validateManifest(body []byte) (manifest, error) { return parseManifest(body, false) }
+func parseManifest(body []byte, legacy bool) (manifest, error) {
 	if len(body) > metadataLimit {
 		return manifest{}, errors.New("Release manifest exceeds its size limit")
 	}
@@ -166,8 +175,8 @@ func validateManifest(body []byte) (manifest, error) {
 	if data.Tag != fmt.Sprintf("build-%d-%.7s", data.Build, data.Commit) {
 		return manifest{}, errors.New("Release tag does not match build and commit")
 	}
-	if data.Asset != fmt.Sprintf("Agent-Job-Queue-Installer-%s-universal.zip", data.Version) {
-		return manifest{}, errors.New("Unexpected installer asset")
+	if data.Asset != assetName(data.Version, legacy) {
+		return manifest{}, errors.New("Unexpected app asset")
 	}
 	return data, nil
 }
@@ -390,7 +399,10 @@ func boundedFile(path string, limit int) ([]byte, error) {
 	}
 	return body, nil
 }
-func (f *refresher) downloadRelease(release map[string]any, work string) (manifest, string, error) {
+
+// A legacy release is only verified as the predecessor of the current tap
+// state: its installer cask is never rendered, so no cask is returned.
+func (f *refresher) downloadRelease(release map[string]any, work string, legacy bool) (manifest, string, error) {
 	tag := asString(release["tag_name"])
 	if !tagPattern.MatchString(tag) {
 		return manifest{}, "", errors.New("Invalid public release tag")
@@ -410,7 +422,7 @@ func (f *refresher) downloadRelease(release map[string]any, work string) (manife
 	if err != nil {
 		return manifest{}, "", err
 	}
-	data, err := validateManifest(body)
+	data, err := parseManifest(body, legacy)
 	if err != nil {
 		return manifest{}, "", err
 	}
@@ -426,7 +438,7 @@ func (f *refresher) downloadRelease(release map[string]any, work string) (manife
 		names[asString(asObject(asset)["name"])]++
 	}
 	if names["agent-job-queue.json"] != 1 || names[data.Asset] != 1 {
-		return manifest{}, "", errors.New("Release does not contain unique expected metadata and installer assets")
+		return manifest{}, "", errors.New("Release does not contain unique expected metadata and app assets")
 	}
 	if err := download(data.Asset); err != nil {
 		return manifest{}, "", err
@@ -442,7 +454,10 @@ func (f *refresher) downloadRelease(release map[string]any, work string) (manife
 		return manifest{}, "", err
 	}
 	if hex.EncodeToString(hash.Sum(nil)) != data.SHA256 {
-		return manifest{}, "", errors.New("Downloaded installer checksum does not match manifest")
+		return manifest{}, "", errors.New("Downloaded app archive checksum does not match manifest")
+	}
+	if legacy {
+		return data, "", nil
 	}
 	cask, err := renderCask(data)
 	if err != nil {
@@ -582,6 +597,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		return errors.New("Tap metadata and cask must both exist or both be absent")
 	}
 	var current *manifest
+	legacyCurrent := false
 	if manifestErr == nil {
 		body, err := boundedFile(manifestPath, metadataLimit)
 		if err != nil {
@@ -589,7 +605,11 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		}
 		item, err := validateManifest(body)
 		if err != nil {
-			return err
+			legacyItem, legacyErr := parseManifest(body, true)
+			if legacyErr != nil {
+				return err
+			}
+			item, legacyCurrent = legacyItem, true
 		}
 		current = &item
 	}
@@ -604,7 +624,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		release map[string]any
 	}
 	cache := map[string]checkedRelease{}
-	checked := func(tag string) (checkedRelease, error) {
+	checked := func(tag string, legacy bool) (checkedRelease, error) {
 		if result, ok := cache[tag]; ok {
 			return result, nil
 		}
@@ -612,7 +632,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		if err != nil {
 			return checkedRelease{}, err
 		}
-		data, cask, err := f.downloadRelease(release, work)
+		data, cask, err := f.downloadRelease(release, work, legacy)
 		if err != nil {
 			return checkedRelease{}, err
 		}
@@ -622,7 +642,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 	}
 	var requested checkedRelease
 	if expectedTag != "" {
-		requested, err = checked(expectedTag)
+		requested, err = checked(expectedTag, false)
 		if err != nil {
 			return err
 		}
@@ -630,7 +650,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 			return errors.New("Expected commit does not match its public release")
 		}
 	}
-	newest, err := checked(asString(latest["tag_name"]))
+	newest, err := checked(asString(latest["tag_name"]), false)
 	if err != nil {
 		return err
 	}
@@ -647,7 +667,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		}
 	}
 	if current != nil {
-		published, err := checked(current.Tag)
+		published, err := checked(current.Tag, legacyCurrent)
 		if err != nil {
 			return err
 		}
@@ -675,7 +695,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 		}
 		if current.Build == data.Build {
 			if string(installed) == cask {
-				fmt.Fprintln(f.output, "Tap is already current; public metadata, installer and cask verified.")
+				fmt.Fprintln(f.output, "Tap is already current; public metadata, app archive and cask verified.")
 			} else {
 				fmt.Fprintln(f.output, "Published build verified; template change awaits a newer app release.")
 			}
@@ -688,7 +708,7 @@ func (f *refresher) refresh(publish bool, expectedTag, expectedCommit string) er
 	if publish {
 		return f.publish(data, cask, head)
 	}
-	fmt.Fprintf(f.output, "Validated %s and installer checksum; publication disabled.\n", data.Tag)
+	fmt.Fprintf(f.output, "Validated %s and app archive checksum; publication disabled.\n", data.Tag)
 	return nil
 }
 
@@ -741,7 +761,7 @@ const caskTemplate = `cask "agent-job-queue" do
   sha256 "%s"
 
   url "https://github.com/%s/releases/download/%s/%s"
-  name "Agent Job Queue"
+  name "Agent Queue"
   desc "Shared heavy-command queue with a macOS menu-bar app"
   homepage "https://github.com/%s"
 
@@ -749,28 +769,16 @@ const caskTemplate = `cask "agent-job-queue" do
 
   # Preserve quarantine so macOS can assess the notarized release.
 
-  application = "#{Dir.home}/Applications/Agent Queue.app"
-  app "Agent Job Queue Installer.app/Contents/Resources/payload/Agent Queue.app", target: application
+  app "Agent Queue.app"
 
-  # Stable per-user wrappers survive staged cask cleanup and future upgrades.
-  binary "Agent Job Queue Installer.app/Contents/Resources/payload/source/links/agent-heavy"
-  binary "Agent Job Queue Installer.app/Contents/Resources/payload/source/links/agent-remote"
-
-  # The app artifact owns app removal and upgrade rollback.
-  uninstall quit: "io.went.agent-queue",
-            script: {
-              executable: "/bin/rm",
-              args: ["-f", "--", "#{Dir.home}/Library/LaunchAgents/io.went.agent-queue.plist"],
-              sudo: false,
-            }
+  uninstall quit: "io.went.agent-queue"
 
   caveats <<~EOS
-    Installs Agent Queue for this account without Python, uv, or a Go toolchain.
-    Open Agent Queue to finish setup. Command-line tools are ready after setup completes.
-    Release installer and app are Developer ID signed and notarized.
-    Quarantine is retained. Phone access is off until enabled.
-    Uninstall preserves the independent queue, jobs, credentials and remote access.
-    Disable phone access in settings before uninstall to stop its HTTPS service.
+    Open Agent Queue from Applications to finish setup; it registers its own
+    background services and adds agent-heavy and agent-remote to ~/.local/bin.
+    macOS may ask you to allow Agent Queue in Login Items settings.
+    Before removing the app, stop its services with:
+      ~/.local/bin/agent-heavy install --app-bundle "#{appdir}/Agent Queue.app" --unregister-services
   EOS
 end
 `

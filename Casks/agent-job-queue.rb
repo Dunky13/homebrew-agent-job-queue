@@ -1,8 +1,8 @@
 cask "agent-job-queue" do
-  version "0.1.0,242"
-  sha256 "36dd50dff27460851b3772cc07134b1b0812e41d9bffc293de952468510c26f1"
+  version "0.1.0,255"
+  sha256 "4cec164dec5cdef3e2c0d427bf826541e808f1ebc4fcffc1461e67ba9fbc10bc"
 
-  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-242-d31dfc8/Agent-Queue-0.1.0-universal.zip"
+  url "https://github.com/Dunky13/agent-job-queue/releases/download/build-255-bd5beae/Agent-Queue-0.1.0-universal.zip"
   name "Agent Queue"
   desc "Shared heavy-command queue with a macOS menu-bar app"
   homepage "https://github.com/Dunky13/agent-job-queue"
@@ -17,7 +17,7 @@ cask "agent-job-queue" do
 
   caveats <<~EOS
     Open Agent Queue from Applications to use its menu bar.
-    Before removing the app, stop its services with:
+    Before removing the app, finish its jobs, then run this. It quits the app and removes its login item:
       ~/.local/bin/agent-heavy install --app-bundle "#{appdir}/Agent Queue.app" --unregister-services
   EOS
 end
